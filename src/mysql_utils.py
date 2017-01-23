@@ -55,8 +55,8 @@ def docinfoFromMySQLIter():
 def dump_entries(cursor, entries):
     
     add_entry = ("INSERT INTO " + TABLE + " "
-                 "(doc_id, title, info_url, pdf_url, n_pages) "
-                 "VALUES (%(doc_id)s, %(title)s, %(info_url)s, %(pdf_url)s, %(n_pages)s)")
+                 "(doc_id, title, n_pages) "
+                 "VALUES (%(doc_id)s, %(title)s, %(n_pages)s)")
     
     rows = []
     dls = set()
