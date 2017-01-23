@@ -8,18 +8,23 @@ Created on Sun Jan 22 15:30:46 2017
 
 import os
 import pickle
-import requests
-
-def getPage(url, method='req'):
-    if method=='req':
-        return(get_page_requests(url))
-    elif method=='tor':
-        pass
+import xml.etree.ElementTree as ET
+import socks
+from sockshandler import SocksiPyHandler
+from urllib import request
 
 
-def get_page_requests(url):
-    page = requests.get(url)
-    return(page.content)
+def get_main_dir():
+    fd = os.path.split(os.path.realpath(os.path.split(__file__)[0]))[0]
+    return(fd)
+
+
+def configure_tor_opener():
+    opener = request.build_opener(SocksiPyHandler(socks.SOCKS5,
+                                                  "127.0.0.1",
+                                                  9050))
+    return(opener)
+
 
 def pickle_data(file_name, data, folder="interim"):
     
@@ -33,3 +38,23 @@ def pickle_data(file_name, data, folder="interim"):
         
     with open(os.path.join(fd, data_path + file_name), 'wb') as f1:
         pickle.dump(data, f1)
+        
+        
+def get_creds(name):
+    fd = get_main_dir()
+    cred_path = os.path.join(fd, 'credentials.creds')
+    tree = ET.parse(cred_path)
+    root = tree.getroot()
+    
+    keep = ET.Element('')
+    username = ''
+    password = ''
+    
+    for elem in root:
+        if elem.attrib['name'] == name:
+            keep = elem
+    if keep.tag:
+        username = keep.find('username').text
+        password = keep.find('password').text
+        
+    return(username, password)
