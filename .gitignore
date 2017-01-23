@@ -74,4 +74,4 @@ target/
 
 
 # credentials files
-*.cred
+*.creds
