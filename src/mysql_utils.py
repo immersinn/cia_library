@@ -16,6 +16,8 @@ from mysql.connector.errors import IntegrityError
 DB = "cia"
 TABLE = "pres_briefing_links"
 
+main_doc_fields = ["doc_id", "title", "n_pages"]
+
 
 def docinfo2MySQL(docs):
     """
@@ -41,8 +43,46 @@ def docinfo2MySQL(docs):
     return(row_nbrs)
 
 
-def docinfoFromMySQL():
-    pass
+def docinfoFromMySQL(limit=0, fields="all"):
+    """
+    Pull document info from MySQL instance
+    """
+    u,p = utils.get_creds('MySQL')
+    cnx = mysql.connector.connect(user=u, password=p, database=DB)
+    cur = MySQLCursor(cnx)
+    
+    try:
+    
+        if limit==0:
+            limit_text = ""
+        else:
+            limit_text = "LIMIT " + str(limit)
+        if fields=="all":
+            fields = main_doc_fields
+        if type(fields) != list:
+            fields = list(fields)
+        for f in fields:
+            if f not in main_doc_fields:
+                err_msg = "Specified field '{}' not a valid field for docs".format(f)
+                raise ValueError(err_msg)
+
+        sqlq = "SELECT " + ", ".join(fields) + " FROM " + TABLE + " " + limit_text
+        cur.execute(sqlq)
+        return(cursor_query_response_to_dict(cur))
+    
+    finally:
+        cur.close()
+        cnx.close()
+    
+    
+def cursor_query_response_to_dict(cursor):
+    """
+    Turns cursor list-tuple response into a list-dict response;
+    Exhausts the cursor
+    """
+    columns = cursor.column_names
+    results = [{col : item for col,item in zip(columns, res)} for res in cursor.fetchall()]
+    return(results)
 
 
 def docinfoFromMySQLIter():

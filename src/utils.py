@@ -58,3 +58,12 @@ def get_creds(name):
         password = keep.find('password').text
         
     return(username, password)
+
+
+def writePDF(pdf_bytes, doc_id):
+    fd = os.path.abspath(os.path.join('..'))
+    data_path = os.path.join(fd, "data/raw/presidents-daily-brief-1969-1977_pdfs")
+    with open(os.path.join(data_path, "DOC_" + doc_id + ".pdf"), 'wb') as f1:
+        f1.write(pdf_bytes)
+    return(1)
+        
