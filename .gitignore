@@ -75,3 +75,6 @@ target/
 
 # credentials files
 *.creds
+
+# spyder project stuff
+/.spyproject/
