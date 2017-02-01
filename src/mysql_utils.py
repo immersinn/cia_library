@@ -19,6 +19,12 @@ TABLE = "pres_briefing_links"
 main_doc_fields = ["doc_id", "title", "n_pages"]
 
 
+def getCnx():
+    u,p = utils.get_creds('MySQL')
+    cnx = mysql.connector.connect(user=u, password=p, database=DB)
+    return(cnx)
+
+
 def docinfo2MySQL(docs):
     """
     
