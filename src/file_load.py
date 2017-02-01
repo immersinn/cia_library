@@ -20,23 +20,41 @@ def fibseq(max_val):
         yield a
         a, b = b, a + b
         
-def retrieve_docs_subset(doc_names):
+        
+def retrieve_docs(collection="presidents-daily-brief-1969-1977", which="all"):
+    
+    if which == "all":
+        file_names = os.listdir(data_dir)
+        
     docs = []
-    for fn in doc_names:
+    for fn in file_names:
         with open(os.path.join(data_dir, fn), 'rb') as f:
             docs.append({"doc_id" : fn.strip('.bin').strip('DOC_'),
-                         "text" : f.read()
+                         "raw" : f.read()
                          })
+    
+    # Merge data from MySQL
+    doc_names = [dn.strip('.bin').strip('DOC_') for dn in file_names]
+    doc_info = doc_info_mysql(doc_names)
+    for doc in docs:
+        try:
+            entry = [di for di in doc_info if di['doc_id'] == doc['doc_id']][0]
+            doc['n_pages'] = entry['n_pages']
+            doc['title'] = entry['title']
+        except IndexError:
+            print(doc['doc_id'])
+        
     return(docs)
 
+
 def doc_info_mysql(doc_names):
-    doc_info = mysql_utils.docinfoFromMySQL(fields = ('doc_id', 'n_pages'))
-    doc_info = [di for di in doc_info if di['doc_id'] in doc_names]
+    doc_info = mysql_utils.docinfoFromMySQL(fields = "all",
+                                            which = doc_names)
     return(doc_info)
 
 
 def main():
     files = os.listdir(data_dir)
     keep = [k for k in fibseq(len(files))]
-    docs = retrieve_docs_subset([files[k] for k in keep])
+    docs = retrieve_docs(which=[files[k] for k in keep])
     return(docs)

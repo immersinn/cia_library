@@ -7,6 +7,12 @@ Created on Tue Jan 31 13:11:21 2017
 """
 
 import warnings
+import re
+
+
+#####
+## SPLITTING DOCUMENT INTO PAGES
+#####
 
 
 target_page_break = "Declassified in Part - Sanitized Copy Approved for Release 2016/"
@@ -29,7 +35,10 @@ def flag_declass_statement(token):
     
 
 def decode_doc(doc):
-    return(doc.decode('utf8', 'replace'))
+    if type(doc)==str:
+        return(doc)
+    elif type(doc)==bytes:
+        return(doc.decode('utf8', 'replace'))
     
     
 def tokenize_doc(doc, method='simple'):
@@ -96,6 +105,7 @@ def trim_and_filter_page(page):
     """
 #    pres_seq = "FOR THE PRESIDENT ONLY"
     pres_seq = "R THE PRESIDENT O"
+    #pres_seq_match = re.compile(r'(FO)?R THE PRESIDENT O(NLY)?')
     page = ' '.join(page)
     pos = page.find(pres_seq)
     if pos > -1 and pos < 100:
@@ -128,8 +138,6 @@ def new_page_split(tokens, n_pages):
                 page = []
         else:
             if declass_year_positions[counter]:
-                pages.append(page)
-                page = []
                 
                 temp = declass_positions[(counter + 1) : (counter + 25)]
                 placeholder = -1
@@ -138,7 +146,12 @@ def new_page_split(tokens, n_pages):
                     if t and updates < 4:
                         placeholder = i
                         updates += 1
-                counter += placeholder + 1
+                if updates >= 2:
+                    pages.append(page)
+                    page = []
+                    counter += placeholder + 1
+                else:
+                    page.append(tokens[counter])
             else:
                 page.append(tokens[counter])
         counter += 1
@@ -148,17 +161,83 @@ def new_page_split(tokens, n_pages):
                       UserWarning)
         
     return(pages)
+
+
+#####
+## CLEANING DOCUMENT TEXT
+#####
+
+
+def clean_text(text):
+    text = fix_linebreaks(text)
+    return(text)
+
+
+def fix_linebreaks(text):
+    """Join words split by a line-break in the doc"""
+    line_break_match_01 = "— "
+    line_break_match_02 = "- "
+    text = text.replace(line_break_match_01, "").replace(line_break_match_02, "")
+    return(text)
                 
         
-def processDoc(doc_dict):
+def preprocessDoc(doc_dict):
     
-    doc = doc_dict['text']
+    content = doc_dict['raw']
     n_pages = doc_dict['n_pages']
     
-    tokens = tokenize_doc(decode_doc(doc))
+    # Split into pages for processing
+    # May use the "Pages" features more later; for now, ignore
+    tokens = tokenize_doc(decode_doc(content))
 #    pages = split_into_pages(tokens, n_pages)
     pages = new_page_split(tokens, n_pages)
     pages = trim_and_filter_pages(pages)
-    doc_dict['pages'] = pages
+    text = '\n<<PAGE_BREAK>>\n'.join(pages)
+    
+    # Clean
+    text = clean_text(text)
+    
+    # Update
+    doc_dict['text'] = text
+            
+    # Return
     return(doc_dict)
 
+
+def preprocessDocs(docs):
+    return([preprocessDoc(doc) for doc in docs])
+
+
+def init_ciadocs(docs):
+    docs = [CIADocumentBase(doc) for doc in docs]
+    for doc in docs:
+        doc.preprocess()
+    return(docs)
+
+
+#####
+## DOC CLASSES
+#####
+
+class CIADocumentBase(object):
+    
+    def __init__(self, data_dict):
+        self.doc_id = data_dict.pop('doc_id')
+        self.raw = data_dict.pop('raw')
+        self.title = data_dict.pop('title')
+        self.content = data_dict.pop('text') if 'text' in data_dict.keys() else self.raw
+        self.n_pages = data_dict.pop('n_pages')
+        
+    
+    @property
+    def meta(self,):
+        return({key : self.__getattribute__(key) for key in  ['doc_id', 'title', 'n_pages']})
+    
+    
+    def preprocess(self, method="basic"):
+        if method=="basic":
+            self.content = preprocessDoc(self.todict())['text']
+            
+    
+    def todict(self,):
+        return({key : self.__getattribute__(key) for key in ['doc_id', 'title', 'n_pages', 'raw']})

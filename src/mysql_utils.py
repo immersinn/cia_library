@@ -49,7 +49,7 @@ def docinfo2MySQL(docs):
     return(row_nbrs)
 
 
-def docinfoFromMySQL(limit=0, fields="all"):
+def docinfoFromMySQL(limit=0, fields="all", which="all"):
     """
     Pull document info from MySQL instance
     """
@@ -62,7 +62,8 @@ def docinfoFromMySQL(limit=0, fields="all"):
         if limit==0:
             limit_text = ""
         else:
-            limit_text = "LIMIT " + str(limit)
+            limit_text = " LIMIT " + str(limit)
+            
         if fields=="all":
             fields = main_doc_fields
         if type(fields) != list:
@@ -71,8 +72,15 @@ def docinfoFromMySQL(limit=0, fields="all"):
             if f not in main_doc_fields:
                 err_msg = "Specified field '{}' not a valid field for docs".format(f)
                 raise ValueError(err_msg)
+                
+        if which=="all":
+            which_text = ""
+        else:
+            which_text = " WHERE doc_id IN "
+            doc_id_list = ", ".join(["'" + str(did) + "'" for did in which])
+            which_text = which_text + "(" + doc_id_list + ")"
 
-        sqlq = "SELECT " + ", ".join(fields) + " FROM " + TABLE + " " + limit_text
+        sqlq = "SELECT " + ", ".join(fields) + " FROM " + TABLE + limit_text + which_text
         cur.execute(sqlq)
         return(cursor_query_response_to_dict(cur))
     
