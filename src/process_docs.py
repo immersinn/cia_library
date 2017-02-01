@@ -94,7 +94,8 @@ def trim_and_filter_page(page):
     
     THIS METHOD IS NOT RELIABLE; SOME TEXT PAGES HAVE THIS TAG COVERED UP
     """
-    pres_seq = "FOR THE PRESIDENT ONLY"
+#    pres_seq = "FOR THE PRESIDENT ONLY"
+    pres_seq = "R THE PRESIDENT O"
     page = ' '.join(page)
     pos = page.find(pres_seq)
     if pos > -1 and pos < 100:
